@@ -215,6 +215,70 @@ namespace Notion.IntegrationTests
             Assert.True(updateResponse.Properties.ContainsKey("Item Status"));
             Assert.True(updateResponse.Properties.ContainsKey("Name"));
         }
+        
+        // add tests for update
+        [Fact]
+        public async Task UpdateDataSource_CanAddProperty()
+        {
+            // Arrange
+            var database = await CreateDatabaseWithAPageAsync("Test Data Source DB to add property");
+
+            var createRequest = new CreateDataSourceRequest
+            {
+                Parent = new DatabaseParentRequest {DatabaseId = database.Id},
+                Properties = new Dictionary<string, DataSourcePropertyConfigRequest>
+                {
+                    {
+                        "Name",
+                        new TitleDataSourcePropertyConfigRequest
+                        {
+                            Description = "The name of the data source",
+                            Title = new Dictionary<string, object>()
+                        }
+                    }
+                },
+                Title = new List<RichTextBaseInput>
+                {
+                    new RichTextTextInput {Text = new Text {Content = "Initial Data Source"}}
+                }
+            };
+
+            var createResponse = await Client.DataSources.CreateAsync(createRequest);
+
+            var updateRequest = new UpdateDataSourceRequest
+            {
+                DataSourceId = createResponse.Id,
+                Title = new List<RichTextBaseInput>
+                {
+                    new RichTextTextInput { Text = new Text { Content = "Updated Data Source" } }
+                },
+                Properties = new Dictionary<string, IUpdatePropertyConfigurationRequest>
+                {
+                    {
+                        "My Text",
+                        new UpdatePropertyConfigurationRequest<RichTextDataSourcePropertyConfigRequest>
+                        {
+                            Name = "My Text",
+                            PropertyRequest = new RichTextDataSourcePropertyConfigRequest
+                            {
+                                Description = "added rich text",
+                                RichText = new Dictionary<string, object>()
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Act
+            var updateResponse = await Client.DataSources.UpdateAsync(updateRequest);
+
+            // Assert
+            Assert.NotNull(updateResponse);
+            Assert.Equal("Updated Data Source", updateResponse.Title.OfType<RichTextText>().First().Text.Content);
+            Assert.Equal(2, updateResponse.Properties.Count);
+            Assert.True(updateResponse.Properties.ContainsKey("My Text"));
+            Assert.True(updateResponse.Properties.ContainsKey("Name"));
+        }
 
         // write test for query
         [Fact]
